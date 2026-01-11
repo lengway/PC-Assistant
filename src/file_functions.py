@@ -3,6 +3,10 @@ import shutil
 import subprocess
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
+from datetime import datetime
+
+
+from logger import log
 
 # Desktop discovery
 
@@ -121,6 +125,10 @@ def handle_open(raw_words: List[str], raw: str) -> str:
         return "Не найдено на рабочем столе"
 
     succeeded = open_path(path)
+    if succeeded:
+        log(f"open: {path}")
+        return "Открыл"
+    return "Не удалось открыть"
     return "Открыл" if succeeded else "Не удалось открыть"
 
 
@@ -145,6 +153,7 @@ def handle_rename(raw: str, command_raw: str) -> str:
         return "Не найдено на рабочем столе"
 
     new_path = rename_path(path, new_raw)
+    log(f"rename: {path} -> {new_path}")
     return f"Переименовано в {new_path.name}"
 
 
@@ -168,6 +177,7 @@ def handle_delete(raw: str, command_raw: str) -> str:
         delete_path(path, confirm=confirm)
     except (PermissionError, IsADirectoryError) as err:
         return str(err)
+    log(f"delete: {path}")
     return "Удалено"
 
 
@@ -186,6 +196,7 @@ def handle_create(raw: str, command_raw: str) -> str:
             new_item = create_item("folder", name)
         except FileNotFoundError:
             return "Рабочий стол не найден"
+        log(f"create folder: {new_item}")
         return f"Создана папка {new_item.name}"
 
     if kind in ("file", "файл"):
@@ -201,6 +212,7 @@ def handle_create(raw: str, command_raw: str) -> str:
             return "Рабочий стол не найден"
         except ValueError as err:
             return str(err)
+        log(f"create file: {new_item}")
         return f"Создан файл {new_item.name}"
 
     return "Тип должен быть file или folder"
@@ -225,3 +237,10 @@ def handle_get(raw: str, command_raw: str) -> str:
         return "Рабочий стол пуст"
     item_names = sorted(item.name for item in desktop_items.values())
     return "Элементы на рабочем столе:\n" + "\n".join(item_names)
+
+def log_action(action: str, log_path: str) -> None:
+    """Log the given action to the specified log file."""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(log_path, "a", encoding="utf-8") as f:
+        f.write(f"[{timestamp}] {action}\n")
+        

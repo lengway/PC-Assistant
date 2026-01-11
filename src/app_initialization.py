@@ -1,21 +1,24 @@
 import os
 import sys
+from datetime import datetime
+from pathlib import Path
 from typing import Callable
 
 from PyQt6.QtWidgets import QApplication, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
+from logger import init_logger, log
 
-def help_text() -> str:
-    return (
-        "Доступные команды:\n"
-        "- открыть <имя>: Открыть файл или ярлык на рабочем столе.\n"
-        "- переименуй <старое имя> -> <новое имя>: Переименовать файл или папку.\n"
-        "- удали <имя> [ok]: Удалить файл или папку; для непустой папки добавьте ok.\n"
-        "- создай folder <имя> или создай file <имя> <расширение>: создать папку или файл на рабочем столе.\n"
-        "- что / какие [фильтр]: Показать список файлов и папок на рабочем столе.\n"
-        "- выход: Выйти из программы."
-    )
+LOG_PATH = None
+
 
 def init(parse_and_run: Callable[[str], str]) -> None:
+    global LOG_PATH
+    logs_dir = os.path.join(os.getcwd(), "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    LOG_PATH = os.path.join(logs_dir, f"session-{timestamp}.log")
+    init_logger(Path(LOG_PATH))
+    log("Application started")
+            
     app = QApplication(sys.argv)
     window = QWidget()
     window.setWindowTitle("Voice Assistant")
@@ -40,10 +43,6 @@ def init(parse_and_run: Callable[[str], str]) -> None:
     window.setLayout(layout)
     window.show()
     sys.exit(app.exec())
-    
-    if not os.path.exists("logs/log.txt"):
-        with open("logs/log.txt", "w") as f:
-            f.write("Application started\n")
             
 def on_submit(
     app: QApplication,
