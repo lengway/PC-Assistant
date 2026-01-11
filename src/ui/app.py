@@ -29,16 +29,22 @@ def init(parse_and_run: Callable[[str], str]) -> None:
     
     input_field = QLineEdit()
     input_field.setPlaceholderText("Enter command here...")
+    
     submit_button = QPushButton("Submit")
-    result_label = QLabel("")
     submit_button.clicked.connect(
         lambda: on_submit(app, window, input_field, result_label, parse_and_run)
     )
+    
+    result_label = QLabel("")
+    
+    stop_button = QPushButton("Exit")
+    stop_button.clicked.connect(app.quit)
     
     layout.addWidget(label)
     layout.addWidget(input_field)
     layout.addWidget(submit_button)
     layout.addWidget(result_label)
+    layout.addWidget(stop_button)
     
     window.setLayout(layout)
     window.show()
@@ -52,7 +58,12 @@ def on_submit(
     parse_and_run: Callable[[str], str],
 ):
     text = input_field.text()
-    result = parse_and_run(text)
+    try:
+        result = parse_and_run(text)
+    except Exception as exc:  # safeguard to keep UI alive
+        log(f"Unhandled error: {exc}")
+        result = "Произошла ошибка"
+
     if result == "exit":
         app.quit()
     else:
