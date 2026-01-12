@@ -6,6 +6,7 @@ from typing import Callable
 
 from PyQt6.QtWidgets import QApplication, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
 from logger import init_logger, log
+from asr import transcribe_once
 
 LOG_PATH = None
 
@@ -34,6 +35,11 @@ def init(parse_and_run: Callable[[str], str]) -> None:
     submit_button.clicked.connect(
         lambda: on_submit(app, window, input_field, result_label, parse_and_run)
     )
+
+    rec_button = QPushButton("Record Voice Command")
+    rec_button.clicked.connect(
+        lambda: on_voice(app, result_label, parse_and_run)
+    )
     
     result_label = QLabel("")
     
@@ -43,6 +49,7 @@ def init(parse_and_run: Callable[[str], str]) -> None:
     layout.addWidget(label)
     layout.addWidget(input_field)
     layout.addWidget(submit_button)
+    layout.addWidget(rec_button)
     layout.addWidget(result_label)
     layout.addWidget(stop_button)
     
@@ -68,3 +75,24 @@ def on_submit(
         app.quit()
     else:
         result_label.setText(result)
+
+
+def on_voice(
+    app: QApplication,
+    result_label: QLabel,
+    parse_and_run: Callable[[str], str],
+):
+    text = transcribe_once(timeout_sec=5)
+    if not text:
+        result_label.setText("Не удалось распознать речь")
+        return
+    try:
+        result = parse_and_run(text)
+    except Exception as exc:
+        log(f"Unhandled error (voice): {exc}")
+        result = "Произошла ошибка"
+
+    if result == "exit":
+        app.quit()
+    else:
+        result_label.setText(f"Распознано: {text}\n{result}")
